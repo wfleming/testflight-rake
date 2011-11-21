@@ -9,8 +9,7 @@ A collection of rake tasks for an iOS project to make building & deploying build
 4. Create a file called `.rakeenv` in the same directory. Add configuration here.
    The following is pretty much the minimum of what you need to put here:
 
-**.rakeenv contents:**
-```
+```ruby
 set(:app_name, YOUR_APP_NAME)  
 set(:environment, 'TestFlight') # you can use other environment tasks later if you prefer, but you need a default  
 set(:xcode_configuration, CONFIGURATION_TO_BUILD)  
