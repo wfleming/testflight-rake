@@ -1,29 +1,9 @@
 # TestFlight Rake utility
 # Will Fleming <will@jwock.org> 2011
+# https://github.com/wfleming/testflight-rake
 #
 # A collection of rake tasks for an iOS project to make building & deploying
 # builds to TestFlight much easier.
-#
-# Setup:
-# 1. Drop this Rakefile into your project root.
-# 2. Ensure you have the httpclient gem installed
-# 3. Currently we depend on you versioning your builds using agvtool. Do that.
-# 4. Create a file called .rakeenv in the same directory. Add configuration here.
-#    The following is pretty much the minimum of what you need to put here:
-#
-#    .rakenv contents:
-#    set(:app_name, YOUR_APP_NAME)
-#    set(:environment, 'TestFlight') # you can use other environment tasks later if you prefer, but you need a default
-#    set(:xcode_configuration, CONFIGURATION_TO_BUILD)
-#    set(:testflight_team_token, YOUR_TEAM_TOKEN)
-#    set(:testflight_api_token, YOUR_API_TOKEN)
-#    set(:testflight_distribution_lists, TESTFLIGHT_DIST_LISTS_TO_SEND_TO)  # not strictly required, but emails won't be sent if you don't
-#
-# Use:
-# `rake release` is all you should really need. Look around if you want more.
-#
-# Maybe I'll put some more detail on configuration, options, flow, and potential
-# improvements later. But not right now.
 
 require 'fileutils'
 require 'rubygems'
@@ -145,8 +125,10 @@ task :sign_ipa => [:require_environment] do
 
   set(:ipa_path, ipa_path)
   FileUtils.rm_f(ipa_path) if File.exists?(ipa_path)
-  puts "* Going to run: `xcrun -sdk iphoneos PackageApplication -v \"#{app_path}\" -o \"#{ipa_path}\" --sign \"Mint Digital\" --embed \"Speedo_AdHoc.mobileprovision\"`" #DEBUG
-  xcrun_output = `xcrun -sdk iphoneos PackageApplication -v "#{app_path}" -o "#{ipa_path}" --sign "Mint Digital" --embed "Speedo_AdHoc.mobileprovision"`
+  codesign_id = fetch(:codesign_identity)
+  provisioning_profile = fetch(:provisioning_profile_path)
+  puts "* Going to run: `xcrun -sdk iphoneos PackageApplication -v \"#{app_path}\" -o \"#{ipa_path}\" --sign \"#{codesign_id}\" --embed \"#{provisioning_profile}\"`" #DEBUG
+  xcrun_output = `xcrun -sdk iphoneos PackageApplication -v "#{app_path}" -o "#{ipa_path}" --sign "#{codesign_id}" --embed "#{provisioning_profile}"`
   puts "NB: this command will claim it failed, saying it was 'unable to create' the ipa. Don't worry, everything's fine unless you see errors after this."
   # xcrun is expected to fail because it's dumb...but it mostly gets there.
   # it just fails on the zip step because it's looking in the wrong place.
