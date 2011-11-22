@@ -38,13 +38,19 @@ def fetch(key)
   ENV[key.to_s.upcase]
 end
 
+
+# Load up some default settings, then user environment
+set(:no_tag, false)
+set(:edit_release_notes, true)
 if File.exists? ('.rakeenv')
   load '.rakeenv'
 else
   puts "WARNING: no .rakeenv found. If you didn't set everything in your environment, you will be unhappy."
 end
 
-# Tasks
+
+### TASKS ###
+
 task :require_environment do
   env = fetch(:environment)
   if env.nil? ||  0 == env.length
@@ -93,6 +99,7 @@ end
 desc 'Make a best guess at what the release notes for a release should be.'
 task :release_notes => [:require_environment] do
   #TODO - don't think this goes well if this is your first release (i.e. no -previous tag)
+  #TODO - also try to be smart & abandon ship if release notes for this version already exist
   env = fetch(:environment)
   previous_tag = "#{env}-previous"
   current_tag = "#{env}-current"
@@ -176,6 +183,12 @@ task :upload_to_testflight do
 
   ipa_path = fetch(:ipa_path)
   release_notes_path = fetch(:release_notes_path)
+
+  if fetch(:edit_release_notes)
+    # TODO - insert #comment lines in release notes informing user they can edit,
+    # then strip them afterwards before uploading
+    `$EDITOR #{release_notes_path}`
+  end
 
   if ipa_path.nil? || !File.exists?(ipa_path)
     raise Exception.new("No .ipa was found! ipa_path is '#{ipa_path}'")
