@@ -11,11 +11,22 @@ require 'httpclient'
 
 # utility functions
 def set(key, value)
+  if false == value
+    value = 'FALSE'
+  elsif true == value
+    value = 'TRUE'
+  end
   ENV[key.to_s.upcase] = value
 end
 
 def fetch(key)
-  ENV[key.to_s.upcase]
+  val = ENV[key.to_s.upcase]
+  if 'FALSE' == val
+    val = false
+  elsif 'TRUE' == val
+    val = true
+  end
+  val
 end
 
 
@@ -45,32 +56,47 @@ task :bump_version do
   puts `agvtool bump -all`
   build_number = `agvtool vers -terse`.chomp
   puts `git commit *-Info.plist */*-Info.plist *.xcodeproj/project.pbxproj -m "Bumping version number to #{build_number}"`
-  puts `git push`
+  # again, auto-pushing is annoying. add a flag?
+  #puts `git push`
   puts
 end
 
 desc 'Tag and push tag for current release'
 task :tag_release => [:require_environment] do
-  if fetch(:no_tag).nil?
+  if fetch(:no_tag).nil? || !fetch(:no_tag)
     puts "=== Tagging the current build"
     env = fetch(:environment)
 
     # tag a specific tag so we can refer to this version
-    build_number = `agvtool vers -terse`.chomp
-    date_str = Time.now.strftime('%Y-%m-%d')
-    puts `git tag -fam '' #{env}-#{date_str}-build-#{build_number} HEAD`
-    puts `git push -f origin #{env}-#{date_str}-build-#{build_number}`
+    # This generates a *lot* of tags, but some people might find it useful.
+    # should add a flag & turn it off by default
+    # build_number = `agvtool vers -terse`.chomp
+    # date_str = Time.now.strftime('%Y-%m-%d')
+    # puts `git tag -fam '' #{env}-#{date_str}-build-#{build_number} HEAD`
+    # puts `git push -f origin #{env}-#{date_str}-build-#{build_number}`
 
     # move current -> previous
     current  = `git show-ref --tags --hash --abbrev #{env}-current`.chomp
+    head = `git show-ref --hash --abbrev HEAD`.chomp
+    
+    if current == head
+      puts "* Looks like this release was already tagged."
+      return
+    end
+    
     if current && current.length > 0
       puts `git tag -fam '' #{env}-previous #{env}-current`
-      puts `git push -f origin refs/tags/#{env}-previous`
+      # don't push by default - again, maybe add a flag?
+      #puts `git push -f origin refs/tags/#{env}-previous`
+    else # there was no current - assume this is first build, tag first commit as -previous
+      first_commit = `git log --pretty="%H" | tail -1`.chomp
+      puts `git tag -fam '' #{env}-previous #{first_commit}`
     end
 
     # re-tag current
     puts `git tag -fam '' #{env}-current HEAD`
-    puts `git push -f origin refs/tags/#{env}-current`
+    # don't push by default - again, maybe add a flag?
+    #puts `git push -f origin refs/tags/#{env}-current`
 
     puts
   end
@@ -78,16 +104,27 @@ end
 
 desc 'Make a best guess at what the release notes for a release should be.'
 task :release_notes => [:require_environment] do
-  #TODO - don't think this goes well if this is your first release (i.e. no -previous tag)
-  #TODO - also try to be smart & abandon ship if release notes for this version already exist
   env = fetch(:environment)
-  previous_tag = "#{env}-previous"
-  current_tag = "#{env}-current"
-  log = `git log --pretty="* %s [%an, %h]" #{previous_tag}...#{current_tag}`
-  file_name = "/tmp/#{fetch(:app_name)}-rake-release-notes-#{`agvtool vers -terse`.chomp}.txt"
-  FileUtils.rm(file_name, :force => true) if File.exists?(file_name)
-  File.open(file_name, 'w') { |f| f.write(log) }
+  
+  file_name = "/tmp/#{fetch(:app_name)}-#{env}-release-notes-#{`agvtool vers -terse`.chomp}.txt"
   set(:release_notes_path, file_name)
+  
+  if File.exists?(file_name)
+    puts "* It looks like release notes already exist for this version"
+  else  
+    previous_tag = "#{env}-previous"
+    current_tag = "#{env}-current"
+  
+    # this will not go well if these tags don't exist.
+    if 0 == `git tag -l #{previous_tag}`.length || 0 == `git tag -l #{current_tag}`.length
+      puts "* ERROR: abandoning release notes, couldn't find tags"
+      return
+    end
+
+    log = `git log --pretty="* %s [%an, %h]" #{previous_tag}...#{current_tag}`  
+    File.open(file_name, 'w') { |f| f.write(log) }
+  end
+  
   unless fetch(:skip_showing_release_notes)
     `$EDITOR #{file_name}`
   end
@@ -185,7 +222,7 @@ task :upload_to_testflight do
     :file => File.new(ipa_path),
     :notes => release_notes_string,
     :api_token => fetch(:testflight_api_token),
-    :team_token => fetch(:testflight_api_token),
+    :team_token => fetch(:testflight_team_token),
     :notify => notify_teammates,
     :distribution_lists => fetch(:testflight_distribution_lists)
   })
@@ -194,7 +231,7 @@ task :upload_to_testflight do
   else
     puts "* SUCCESS:"
   end
-  puts response.body.content
+  puts response.body
 end
 
 desc 'Upload a built release to TestFlight'
