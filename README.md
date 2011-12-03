@@ -2,11 +2,17 @@
 
 A collection of rake tasks for an iOS project to make building & deploying builds to TestFlight much easier.
 
+What it automates:
+
+* incrementing your version number
+* compiling & signing your app bundle
+* compiling release notes (from commit messages), which you can edit before upload
+
 ## Setup:
 1. Drop this `Rakefile` into your project root.
 2. Ensure you have the `httpclient` gem installed
 3. Currently we depend on you versioning your builds using `agvtool`. Do that.
-4. Create a file called `.rakeenv` in the same directory. Add configuration here.
+4. Create a file called `.rakeenv` in the same directory. Add configuration to this file.
    The following is pretty much the minimum of what you need to put here:
 
 ```ruby
