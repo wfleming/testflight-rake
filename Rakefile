@@ -52,6 +52,7 @@ end
 
 desc "bump the current release number"
 task :bump_version do
+# TODO - be smart here, check the most recent log message, don't bump here if we just did. will make failed uploads/bad config easier to deal with.
   puts "=== Bumping the build number"
   puts `agvtool bump -all`
   build_number = `agvtool vers -terse`.chomp
