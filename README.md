@@ -4,9 +4,10 @@ A collection of rake tasks for an iOS project to make building & deploying build
 
 What it automates:
 
-* incrementing your version number
-* compiling & signing your app bundle
-* compiling release notes (from commit messages), which you can edit before upload
+* Incrementing your build number
+* Compiling & signing your app bundle
+* Compiling release notes (from commit messages), which you can edit before upload
+* Uploading the new release to TestFlight & notifying team members.
 
 ## Setup:
 1. Drop this `Rakefile` into your project root.
