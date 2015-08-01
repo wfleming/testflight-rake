@@ -1,3 +1,9 @@
+# Outdated, Deprecated, etc.
+
+This was a quick tool written back in 2011 for testflightapp.com, when TestFlight was an independent company. It is not even remotely compatible with TestFlight as it exists now, as part of Apple. The project is left up purely for posterity.
+
+----------
+
 # TestFlight Rake utility
 
 A collection of rake tasks for an iOS project to make building & deploying builds to TestFlight much easier.
